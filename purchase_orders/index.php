@@ -1031,4 +1031,38 @@ No Purchase Orders Found.
 
     </div>
 
-</div>  <?php require __DIR__.'/../includes/footer.php'; ?>
+</div>  
+<script>
+function calculate(){
+
+var import_price=parseFloat(document.getElementById("import_price").value)||0;
+
+var freight=parseFloat(document.getElementById("freight").value)||0;
+
+var carriage=parseFloat(document.getElementById("carriage").value)||0;
+
+var duty=parseFloat(document.getElementById("duty").value)||0;
+
+var tax=parseFloat(document.getElementById("tax").value)||0;
+
+var weight=parseFloat(document.getElementById("weight").value)||0;
+
+var total=import_price+freight+carriage+duty+tax;
+
+document.getElementById("grand_total").value=total.toFixed(2);
+
+if(weight>0){
+
+document.getElementById("cost_per_kg").value=(total/weight).toFixed(2);
+
+}
+
+}
+
+document.querySelectorAll("input").forEach(function(i){
+
+i.addEventListener("keyup",calculate);
+
+});
+</script>
+<?php require __DIR__.'/../includes/footer.php'; ?>
