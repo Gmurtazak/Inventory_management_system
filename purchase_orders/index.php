@@ -579,7 +579,7 @@ class="form-control">
 
 <input
 type="number"
-step="0.0001"
+step="0.0000"
 name="exchange_rate"
 class="form-control"
 value="<?=$exchange_rate?>">
@@ -1031,4 +1031,4 @@ No Purchase Orders Found.
 
     </div>
 
-</div>
+</div>  <?php require __DIR__.'/../includes/footer.php'; ?>
