@@ -11,6 +11,7 @@ $tc  = (int)$db->query("SELECT COUNT(*) c FROM customers")->fetch_assoc()['c'];
 $tsu = (int)$db->query("SELECT COUNT(*) c FROM suppliers")->fetch_assoc()['c'];
 $tt  = (int)$db->query("SELECT COUNT(*) c FROM ledger_transactions")->fetch_assoc()['c'];
 $cs  = (float)$db->query("SELECT COALESCE(SUM(current_stock),0) s FROM product_varieties")->fetch_assoc()['s'];
+$po = (int)$db->query("SELECT COUNT(*) AS c FROM purchase_orders")->fetch_assoc()['c'];
 $ls  = (int)$db->query("SELECT COUNT(*) c FROM product_varieties WHERE current_stock<=10")->fetch_assoc()['c'];
 $today = date('Y-m-d');
 $st = $db->prepare("SELECT COUNT(*) c FROM ledger_transactions WHERE transaction_date=?");
@@ -101,6 +102,13 @@ require __DIR__.'/includes/header.php';
     <div>
       <div class="stat-num" data-count="<?php echo $tsu; ?>"><?php echo number_format($tsu); ?></div>
       <div class="stat-lbl">Suppliers</div>
+    </div>
+  </a>
+   <a href="<?php echo APP_URL; ?>/purchase_orders/index.php" class="stat-card">
+    <div class="si yellow"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+    <div>
+      <div class="stat-num" data-count="<?php echo (int)$po; ?>"><?php echo number_format($po,0); ?></div>
+      <div class="stat-lbl">Purchase Orders</div>
     </div>
   </a>
   <a href="<?php echo APP_URL; ?>/reports/index.php?action=generate&type=current_stock" class="stat-card">

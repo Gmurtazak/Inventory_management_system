@@ -40,7 +40,7 @@ $remarks        = "";
 $grand_total    = 0;
 $cost_per_kg    = 0;
 
-$status         = "Draft";
+$status         = "Pending";
 
 $search = trim($_GET['search'] ?? '');
 
@@ -602,9 +602,9 @@ value="<?=$exchange_rate?>">
 name="status"
 class="form-control">
 
-<option value="Draft" <?=$status=="Draft"?'selected':''?>>Draft</option>
+<option value="Pending" <?=$status=="Pending"?'selected':''?>>Pending</option>
 
-<option value="Approved" <?=$status=="Approved"?'selected':''?>>Approved</option>
+<option value="Complete" <?=$status=="Complete"?'Complete':''?>>Complete</option>
 
 <option value="Received" <?=$status=="Received"?'selected':''?>>Received</option>
 
@@ -989,9 +989,9 @@ while($row=$result->fetch_assoc()):
 
 switch($row['status']){
 
-case 'Approved':
+case 'Complete':
 
-echo '<span class="badge badge-success">Approved</span>';
+echo '<span class="badge badge-success">Complete</span>';
 
 break;
 
@@ -1003,7 +1003,7 @@ break;
 
 default:
 
-echo '<span class="badge badge-warning">Draft</span>';
+echo '<span class="badge badge-warning">Pending</span>';
 
 }
 
