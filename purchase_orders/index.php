@@ -26,12 +26,14 @@ $exchange_rate  = 1;
 $import_price   = 0;
 $freight        = 0;
 $carriage       = 0;
-$insurance      = 0;
+$factory_cost      = 0;
 $duty           = 0;
 $tax            = 0;
 $other_charges  = 0;
 
 $total_weight   = 0;
+$weight_received  = 0;
+$weight_balance   = 0; 
 $destination    = "";
 $remarks        = "";
 
@@ -73,13 +75,15 @@ if(isset($_GET['action']) &&
         $import_price=$po['import_price'];
         $freight=$po['freight'];
         $carriage=$po['carriage'];
-        $insurance=$po['insurance'];
+        $factory_cost=$po['factory_cost'];
         $duty=$po['duty'];
         $tax=$po['tax'];
         $other_charges=$po['other_charges'];
 
         $destination=$po['destination'];
-        $total_weight=$po['total_weight'];
+         $total_weight=$po['total_weight'];
+        $weight_received=$po['weight_received'];
+        $weight_balance=$po['weight_balance'];
 
         $grand_total=$po['grand_total'];
         $cost_per_kg=$po['cost_per_kg'];
@@ -138,13 +142,15 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
     $import_price=(float)$_POST['import_price'];
     $freight=(float)$_POST['freight'];
     $carriage=(float)$_POST['carriage'];
-    $insurance=(float)$_POST['insurance'];
+    $factory_cost=(float)$_POST['factory_cost'];
     $duty=(float)$_POST['duty'];
     $tax=(float)$_POST['tax'];
     $other_charges=(float)$_POST['other_charges'];
 
     $destination=trim($_POST['destination']);
     $total_weight=(float)$_POST['total_weight'];
+    $weight_received=(float)$_POST['weight_received'];
+    $weight_balance=(float)$_POST['weight_balance'];
 
     $remarks=trim($_POST['remarks']);
 
@@ -154,7 +160,7 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         $import_price+
         $freight+
         $carriage+
-        $insurance+
+        $factory_cost+
         $duty+
         $tax+
         $other_charges;
@@ -181,7 +187,7 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         import_price=?,
         freight=?,
         carriage=?,
-        insurance=?,
+        factory_cost=?,
         duty=?,
         tax=?,
         other_charges=?,
@@ -189,7 +195,8 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         destination=?,
 
         total_weight=?,
-
+        weight_received=?,
+        weight_balance=?,
         grand_total=?,
         cost_per_kg=?,
 
@@ -202,7 +209,7 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
 
         $stmt->bind_param(
 
-        "issddddddddsdddssi",
+       "sissddddddddsdddddss",
 
         $supplier_id,
         $purchase_date,
@@ -213,15 +220,14 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         $import_price,
         $freight,
         $carriage,
-        $insurance,
+        $factory_cost,
         $duty,
         $tax,
         $other_charges,
-
         $destination,
-
         $total_weight,
-
+        $weight_received,
+        $weight_balance,
         $grand_total,
         $cost_per_kg,
 
@@ -233,7 +239,7 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         );
 
     }else{
-
+ 
         $stmt=$db->prepare("
 
         INSERT INTO purchase_orders(
@@ -248,7 +254,7 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         import_price,
         freight,
         carriage,
-        insurance,
+        factory_cost,
         duty,
         tax,
         other_charges,
@@ -256,7 +262,8 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         destination,
 
         total_weight,
-
+        weight_received,
+        weight_balance,
         grand_total,
         cost_per_kg,
 
@@ -267,13 +274,13 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
 
         VALUES
 
-        (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 
         ");
 
         $stmt->bind_param(
 
-        "sissdddddddddsddss",
+       "sissddddddddsdddddss",
 
         $po_no,
         $supplier_id,
@@ -285,7 +292,7 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         $import_price,
         $freight,
         $carriage,
-        $insurance,
+        $factory_cost,
         $duty,
         $tax,
         $other_charges,
@@ -293,7 +300,8 @@ if($_SERVER['REQUEST_METHOD']=="POST"){
         $destination,
 
         $total_weight,
-
+        $weight_received,
+        $weight_balance,
         $grand_total,
         $cost_per_kg,
 
@@ -639,8 +647,8 @@ Import Charges
 </div>
 
 <div class="form-group">
-<label>Carriage</label>
-<input type="number" step="0.01" id="carriage" name="carriage" class="form-control calc" value="<?=$carriage?>">
+    <label>Factory cost</label>
+<input type="number" step="0.01" id="factory_cost" name="factory_cost" class="form-control calc" value="<?=$factory_cost?>">
 </div>
 
 </div>
@@ -648,8 +656,8 @@ Import Charges
 <div class="po-grid-3">
 
 <div class="form-group">
-<label>Insurance</label>
-<input type="number" step="0.01" id="insurance" name="insurance" class="form-control calc" value="<?=$insurance?>">
+<label>Carriage</label>
+<input type="number" step="0.01" id="carriage" name="carriage" class="form-control calc" value="<?=$carriage?>">
 </div>
 
 <div class="form-group">
@@ -664,18 +672,27 @@ Import Charges
 
 </div>
 
-<div class="po-grid-2">
+<div class="po-grid-3">
 
-<div class="form-group">
+<!-- <div class="form-group">
 <label>Other Charges</label>
 <input type="number" step="0.01" id="other_charges" name="other_charges" class="form-control calc" value="<?=$other_charges?>">
-</div>
+</div> -->
 
 <div class="form-group">
 <label>Total Weight (KG)</label>
 <input type="number" step="0.01" id="weight" name="total_weight" class="form-control" value="<?=$total_weight?>">
 </div>
 
+<div class="form-group">
+<label>Total Weight Received (KG)</label>
+<input type="number" step="0.01" id="weight_received" name="weight_received" class="form-control" value="<?=$total_weight?>">
+</div>
+
+<div class="form-group">
+<label>Total Weight balance (KG)</label>
+<input type="number" step="0.01" id="weight_balance" name="weight_balance" class="form-control" value="<?=$total_weight?>">
+</div>
 </div>
 
 </div>
@@ -745,7 +762,7 @@ class="form-control"><?=htmlspecialchars($remarks)?></textarea>
 
 </div>
 
-<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+<div style="display:flex;gap:10px;margin-top:20px;">
 
 <button type="submit" class="btn btn-primary">
 
@@ -755,13 +772,13 @@ class="form-control"><?=htmlspecialchars($remarks)?></textarea>
 
 </button>
 
-<a href="print.php" class="btn btn-success">
+<!-- <a href="print.php" class="btn btn-success">
 
 <i class="fa fa-print"></i>
 
 Print
 
-</a>
+</a> -->
 
 </div>
 
@@ -836,6 +853,7 @@ Print
                 <th>Date</th>
 
                 <th>Supplier</th>
+                 <th>Destination</th>
 
                 <th>Currency</th>
 
@@ -846,6 +864,9 @@ Print
                 <th>Duty</th>
 
                 <th>Tax</th>
+                 <th>Weight Total</th>
+                  <th>Weight Received </th>
+                   <th>Weight Balance </th>
 
                 <th>Grand Total</th>
 
@@ -896,7 +917,11 @@ while($row=$result->fetch_assoc()):
 <?=htmlspecialchars($row['supplier_name'])?>
 
 </td>
+<td>
 
+<?=htmlspecialchars($row['destination'])?>
+
+</td>
 <td>
 
 <?=htmlspecialchars($row['currency'])?>
@@ -924,6 +949,21 @@ while($row=$result->fetch_assoc()):
 <td align="right">
 
 <?=number_format($row['tax'],2)?>
+
+</td>
+<td align="right">
+
+<?=number_format($row['total_weight'],2)?>
+
+</td>
+<td align="right">
+
+<?=number_format($row['weight_received'],2)?>
+
+</td>
+<td align="right">
+
+<?=number_format($row['weight_balance'],2)?>
 
 </td>
 
@@ -1047,7 +1087,9 @@ var tax=parseFloat(document.getElementById("tax").value)||0;
 
 var weight=parseFloat(document.getElementById("weight").value)||0;
 
-var total=import_price+freight+carriage+duty+tax;
+var factorycost=parseFloat(document.getElementById("factory_cost").value)||0;
+
+var total=import_price+freight+carriage+duty+tax+factorycost;
 
 document.getElementById("grand_total").value=total.toFixed(2);
 
@@ -1064,5 +1106,19 @@ document.querySelectorAll("input").forEach(function(i){
 i.addEventListener("keyup",calculate);
 
 });
+function calculateweight(){
+  var weight=parseFloat(document.getElementById("weight").value)||0; 
+  var weightreceived=parseFloat(document.getElementById("weight_received").value)||0; 
+  //var weightbalance=parseFloat(document.getElementById("weight_balance").value)||0;  
+  var balance=weight-weightreceived;
+  document.getElementById("weight_balance").value=balance.toFixed(2);
+
+}
+document.querySelectorAll("input").forEach(function(i){
+
+i.addEventListener("keyup",calculateweight);
+
+});
+
 </script>
 <?php require __DIR__.'/../includes/footer.php'; ?>
