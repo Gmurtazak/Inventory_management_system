@@ -446,8 +446,8 @@ function add_product()
 
         $vs = $db->prepare("
             INSERT INTO product_varieties
-            (product_id, name, current_stock, unit_price, unit)
-            VALUES (?, ?, ?, ?, ?)
+            (product_id, name, current_stock, unit_price, unitwieght, unit)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
 
         foreach ($vnames as $i => $vn) {
@@ -460,6 +460,9 @@ function add_product()
 
             $stock = (float)($vstocks[$i] ?? 0);
             $price = (float)($vprices[$i] ?? 0);
+             // Store "kg" in unitwieght
+            $vunitsw = trim($vunits[$i] ?? '');
+
 
             $unitName = trim($vunit_customs[$i] ?? '');
             if ($unitName == '') {
@@ -467,13 +470,14 @@ function add_product()
             }
 
             $vs->bind_param(
-                "isdds",
-                $pid,
-                $vn,
-                $stock,
-                $price,
-                $unitName
-            );
+              "isdsss",
+              $pid,
+              $vn,
+              $stock,
+              $price,
+              $vunitsw,
+              $unitName
+          );
 
             $vs->execute();
         }
