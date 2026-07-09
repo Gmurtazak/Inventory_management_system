@@ -204,6 +204,9 @@ require __DIR__.'/includes/header.php';
       <a href="<?php echo APP_URL; ?>/products/index.php?action=add" class="qa-btn">
         <div class="qa-icon"><i class="fa-solid fa-box"></i></div><span>New Product</span>
       </a>
+      <a href="<?php echo APP_URL; ?>/purchase_orders/index.php" class="qa-btn">
+        <div class="qa-icon" style="background:var(--success-light);color:var(--success);"><i class="fa-solid fa-file-invoice-dollar"></i></div><span>New Purchase Order</span>
+      </a>
       <a href="<?php echo APP_URL; ?>/customers/index.php" class="qa-btn">
         <div class="qa-icon" style="background:var(--success-light);color:var(--success);"><i class="fa-solid fa-user-plus"></i></div><span>New Customer</span>
       </a>

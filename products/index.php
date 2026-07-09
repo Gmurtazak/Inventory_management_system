@@ -21,10 +21,53 @@ function index_page(){
   $cs=$db->prepare("SELECT COUNT(*) t FROM products p $where");
   if($bp) $cs->bind_param($bt,...$bp); $cs->execute();
   $total=(int)$cs->get_result()->fetch_assoc()['t']; $cs->close(); $pages=ceil($total/$lim);
-  $sql="SELECT p.id,p.name,p.description,p.category,p.unit,COALESCE(v.vc,0) vc,COALESCE(v.ts,0) ts FROM products p LEFT JOIN (SELECT product_id,COUNT(*) vc,SUM(current_stock) ts FROM product_varieties GROUP BY product_id) v ON v.product_id=p.id $where ORDER BY p.name ASC LIMIT ? OFFSET ?";
-  $lp=$bp; $lt=$bt.'ii'; $lp[]=$lim; $lp[]=$off;
-  $ps=$db->prepare($sql); $ps->bind_param($lt,...$lp); $ps->execute();
-  $products=$ps->get_result()->fetch_all(MYSQLI_ASSOC); $ps->close();
+ $sql = "
+SELECT
+    p.id,
+    p.po_no,
+    p.name,
+    p.description,
+    p.category,
+    p.unit,
+    COALESCE(v.vc,0) AS vc,
+    COALESCE(v.ts,0) AS ts,
+    po.weight_received,
+    po.weight_balance,
+    po.purchase_date,
+    s.name AS supplier_name
+FROM products p
+
+LEFT JOIN (
+    SELECT
+        product_id,
+        COUNT(*) AS vc,
+        SUM(current_stock) AS ts
+    FROM product_varieties
+    GROUP BY product_id
+) v ON v.product_id = p.id
+
+LEFT JOIN purchase_orders po
+    ON po.po_no = p.po_no
+
+LEFT JOIN suppliers s
+    ON s.id = po.supplier_id
+
+$where
+
+ORDER BY p.name ASC
+LIMIT ? OFFSET ?
+";
+
+$lp = $bp;
+$lt = $bt . "ii";
+$lp[] = $lim;
+$lp[] = $off;
+
+$ps = $db->prepare($sql);
+$ps->bind_param($lt, ...$lp);
+$ps->execute();
+$products = $ps->get_result()->fetch_all(MYSQLI_ASSOC);
+$ps->close();
   require __DIR__.'/../includes/header.php';
 ?>
 <div class="main-content">
@@ -35,7 +78,7 @@ function index_page(){
     </div>
     <div class="header-actions">
       <a href="<?php echo APP_URL; ?>/dashboard.php" class="btn btn-secondary btn-sm"><i class="fa-solid fa-house"></i> Dashboard</a>
-      <a href="?action=add" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Add Product</a>
+      <a href="?action=add" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Rags to Products</a>
     </div>
   </div>
 
@@ -63,44 +106,103 @@ function index_page(){
   </div>
   <?php else: ?>
   <div class="products-grid">
-    <?php foreach($products as $p): ?>
-    <div class="product-card">
-      <a class="product-card-link" href="?action=view&id=<?php echo $p['id']; ?>"></a>
-      <div class="product-header">
+<?php foreach($products as $p): ?>
+<div class="product-card">
+
+    <a class="product-card-link" href="?action=view&id=<?php echo $p['id']; ?>"></a>
+
+    <div class="product-header">
         <h3><?php echo htmlspecialchars($p['name']); ?></h3>
+
         <div class="product-actions">
-          <a href="?action=edit&id=<?php echo $p['id']; ?>" class="btn btn-secondary btn-sm" title="Edit"><i class="fa-solid fa-pen"></i></a>
-          <a href="?action=delete&id=<?php echo $p['id']; ?>" class="btn btn-danger btn-sm" title="Delete"
-             onclick="return confirmDelete(this.href,'Delete product: <?php echo addslashes(htmlspecialchars($p['name'])); ?>?');return false;"><i class="fa-solid fa-trash"></i></a>
+            <a href="?action=edit&id=<?php echo $p['id']; ?>" class="btn btn-secondary btn-sm" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+            </a>
+
+            <a href="?action=delete&id=<?php echo $p['id']; ?>" class="btn btn-danger btn-sm" title="Delete"
+               onclick="return confirmDelete(this.href,'Delete product: <?php echo addslashes(htmlspecialchars($p['name'])); ?>?');return false;">
+                <i class="fa-solid fa-trash"></i>
+            </a>
         </div>
-      </div>
-      <div class="product-info">
-        <div class="product-category"><?php echo htmlspecialchars($p['category']?:'Uncategorized'); ?></div>
-        <div class="product-desc"><?php echo htmlspecialchars($p['description']?:'No description'); ?></div>
+    </div>
+
+    <div class="product-info">
+
+        <div class="product-category">
+            <?php echo htmlspecialchars($p['category'] ?: 'Uncategorized'); ?>
+        </div>
+
+        <div class="product-desc">
+            <?php echo htmlspecialchars($p['description'] ?: 'No description'); ?>
+        </div>
+
         <div class="product-stats">
-          <span class="ps"><i class="fa-solid fa-layer-group" style="font-size:10px;margin-right:3px;"></i><strong><?php echo $p['vc']; ?></strong> Varieties</span>
-          <span class="ps"><i class="fa-solid fa-cubes" style="font-size:10px;margin-right:3px;"></i><strong><?php echo number_format($p['ts'],2); ?></strong></span>
+            <span class="ps">
+                <i class="fa-solid fa-layer-group" style="font-size:10px;margin-right:3px;"></i>
+                <strong><?php echo $p['vc']; ?></strong> Varieties
+            </span>
+
+            <span class="ps">
+                <i class="fa-solid fa-cubes" style="font-size:10px;margin-right:3px;"></i>
+                <strong><?php echo number_format($p['ts'],2); ?></strong>
+            </span>
         </div>
-      </div>
-      <?php
-      $db2=getDB();
-      $vs=$db2->prepare("SELECT id,name,current_stock FROM product_varieties WHERE product_id=? ORDER BY name ASC LIMIT 8");
-      $vs->bind_param('i',$p['id']); $vs->execute();
-      $vars=$vs->get_result()->fetch_all(MYSQLI_ASSOC); $vs->close(); $db2->close();
-      ?>
-      <div class="product-varieties">
+
+        <hr>
+
+        <div class="product-meta">
+            <strong>PO No:</strong>
+            <?php echo htmlspecialchars($p['po_no']); ?><br>
+
+            <strong>Supplier:</strong>
+            <?php echo htmlspecialchars($p['supplier_name']); ?><br>
+
+            <strong>Weight Received:</strong>
+            <?php echo number_format((float)$p['weight_received'],2); ?> KG
+        </div>
+
+    </div>
+
+    <?php
+    $db2 = getDB();
+
+    $vs = $db2->prepare("
+        SELECT id,name,current_stock
+        FROM product_varieties
+        WHERE product_id=?
+        ORDER BY name ASC
+        LIMIT 8
+    ");
+
+    $vs->bind_param("i", $p['id']);
+    $vs->execute();
+    $vars = $vs->get_result()->fetch_all(MYSQLI_ASSOC);
+    $vs->close();
+    $db2->close();
+    ?>
+
+    <div class="product-varieties">
+
         <?php foreach($vars as $v): ?>
         <a href="<?php echo APP_URL; ?>/ledger/index.php?variety_id=<?php echo $v['id']; ?>" class="variety-chip">
-          <?php echo htmlspecialchars($v['name']); ?>
-          <span class="variety-stock"><?php echo number_format($v['current_stock'],2); ?></span>
+            <?php echo htmlspecialchars($v['name']); ?>
+            <span class="variety-stock">
+                <?php echo number_format($v['current_stock'],2); ?>
+            </span>
         </a>
         <?php endforeach; ?>
-        <?php if($p['vc']>8): ?><span class="variety-more">+<?php echo $p['vc']-8; ?> more</span><?php endif; ?>
-      </div>
-    </div>
-    <?php endforeach; ?>
-  </div>
 
+        <?php if($p['vc'] > 8): ?>
+            <span class="variety-more">
+                +<?php echo $p['vc'] - 8; ?> more
+            </span>
+        <?php endif; ?>
+
+    </div>
+
+</div>
+<?php endforeach; ?>
+</div>
   <?php if($pages>1): ?>
   <div class="pagination" style="margin-top:16px;">
     <?php $qp=array_diff_key($_GET,['page'=>'']); $base='?'.http_build_query($qp).'&page=';
@@ -182,7 +284,7 @@ function show_form(){
 <div class="main-content">
   <div class="page-header">
     <div class="page-header-left">
-      <h1><i class="fa-solid fa-plus-circle"></i> Add Product</h1>
+      <h1><i class="fa-solid fa-plus-circle"></i> Rags to Products</h1>
       <div class="breadcrumb"><a href="index.php">Products</a><span class="sep">/</span><span>Add</span></div>
     </div>
     <div class="header-actions">
@@ -193,7 +295,33 @@ function show_form(){
   <div class="card" style="max-width:760px;">
     <form method="POST">
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Product Name <span class="req">*</span></label><input type="text" name="name" class="form-control" required placeholder="e.g. Paint"></div>
+        <div class="form-group">
+          <?php
+          $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME); 
+          ?>
+          <div class="form-group">
+    <label>Purchase Order No *</label>
+    <select name="po_no" class="form-control" required>
+        <option value="">Select Purchase Order</option>
+
+        <?php
+        $db = getDB();
+        $ps = $db->prepare("SELECT po.id, po.po_no, s.name  AS supplier_name,po.weight_received As weightreceived
+    FROM purchase_orders po
+    LEFT JOIN suppliers s ON po.supplier_id = s.id
+    ORDER BY po.id DESC");
+        $ps->execute();
+        $purchaseOrders = $ps->get_result()->fetch_all(MYSQLI_ASSOC);
+        $ps->close();
+
+        foreach ($purchaseOrders as $po) {
+        ?>
+            <option value="<?= htmlspecialchars($po['po_no']) ?>">
+                <?= htmlspecialchars($po['po_no']) ?> - (<?= htmlspecialchars($po['supplier_name']) ?>) - (<?= htmlspecialchars($po['weightreceived']) ?>KG)
+            </option>
+        <?php } ?>
+    </select>
+</div><div class="form-group"><label class="form-label">Product Name <span class="req">*</span></label><input type="text" name="name" class="form-control" required placeholder="e.g. Paint"></div>
         <div class="form-group"><label class="form-label">Category</label><input type="text" name="category" class="form-control" placeholder="e.g. Construction"></div>
         <div class="form-group"><label class="form-label">Unit</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;">
@@ -246,30 +374,120 @@ vw.addEventListener('click',e=>{ if(e.target.closest('.remove-variety')) e.targe
 <?php require __DIR__.'/../includes/footer.php'; }
 
 /* ── ADD PRODUCT ── */
-function add_product(){
-  $db=getDB(); $name=trim($_POST['name']??''); $desc=trim($_POST['description']??''); $cat=trim($_POST['category']??''); $unit=$_POST['unit']??'pcs';
-  $unit_custom = trim($_POST['unit_custom']??'');
-  if(!$name){ $_SESSION['error']='Product name is required.'; header('Location: ?action=add'); exit; }
-  $ds=$db->prepare("SELECT COUNT(*) c FROM products WHERE LOWER(name)=LOWER(?)"); $ds->bind_param('s',$name); $ds->execute();
-  if($ds->get_result()->fetch_assoc()['c']>0){ $ds->close(); $_SESSION['error']='Product name already exists.'; header('Location: ?action=add'); exit; }
-  $ds->close();
-  $vnames=$_POST['varieties']??[]; $vstocks=$_POST['variety_stocks']??[]; $vprices=$_POST['variety_unit_prices']??[]; $vunits=$_POST['variety_units']??[]; $vunit_customs=$_POST['variety_unit_customs']??[]; $vars=[];
-  foreach($vnames as $i=>$vn){
-    $vn=trim($vn);
-    $vs=(float)($vstocks[$i]??0);
-    $vp=(float)($vprices[$i]??0);
-    $vu=trim($vunits[$i]??'');
-    $vuc=trim($vunit_customs[$i]??'');
-    $unitValue = $vuc !== '' ? $vuc : ($vu ?: '');
-    if($vn!=='') $vars[]=['name'=>$vn,'stock'=>$vs,'unit_price'=>$vp,'unit'=>$unitValue];
-  }
-  $uid=$_SESSION['user_id']??null;
-  $unitValue = $unit_custom !== '' ? $unit_custom : $unit;
-  $st=$db->prepare("INSERT INTO products (name,description,category,unit,created_by) VALUES (?,?,?,?,?)");
-  $st->bind_param('ssssi',$name,$desc,$cat,$unitValue,$uid); $st->execute(); $pid=$db->insert_id; $st->close();
-  if($vars){ $vs=$db->prepare("INSERT INTO product_varieties (product_id,name,current_stock,unit_price,unit) VALUES (?,?,?,?,?)"); foreach($vars as $v){ $vs->bind_param('isdds',$pid,$v['name'],$v['stock'],$v['unit_price'],$v['unit']); $vs->execute(); } $vs->close(); }
-  log_activity('product_add','Added: '.$name);
-  $_SESSION['success']='Product added successfully.'; $db->close(); header('Location: index.php'); exit;
+function add_product()
+{
+    $db = getDB();
+
+    $po_no = trim($_POST['po_no'] ?? '');
+    $name = trim($_POST['name'] ?? '');
+    $desc = trim($_POST['description'] ?? '');
+    $cat = trim($_POST['category'] ?? '');
+    $unit = $_POST['unit'] ?? 'pcs';
+    $unit_custom = trim($_POST['unit_custom'] ?? '');
+
+    if ($po_no == '') {
+        $_SESSION['error'] = 'Please select a Purchase Order.';
+        header('Location: ?action=add');
+        exit;
+    }
+
+    if ($name == '') {
+        $_SESSION['error'] = 'Product name is required.';
+        header('Location: ?action=add');
+        exit;
+    }
+
+    // Check duplicate product name
+    $ds = $db->prepare("SELECT COUNT(*) AS c FROM products WHERE LOWER(name)=LOWER(?)");
+    $ds->bind_param("s", $name);
+    $ds->execute();
+
+    if ($ds->get_result()->fetch_assoc()['c'] > 0) {
+        $ds->close();
+        $_SESSION['error'] = 'Product name already exists.';
+        header('Location: ?action=add');
+        exit;
+    }
+    $ds->close();
+
+    $unitValue = ($unit_custom != '') ? $unit_custom : $unit;
+    $uid = $_SESSION['user_id'] ?? null;
+
+    // Insert Product
+    $st = $db->prepare("
+        INSERT INTO products
+        (po_no, name, description, category, unitwieght, unit, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    $st->bind_param(
+        "ssssssi",
+        $po_no,
+        $name,
+        $desc,
+        $cat,
+        $unit,
+        $unitValue,
+        $uid
+    );
+
+    $st->execute();
+    $pid = $db->insert_id;
+    $st->close();
+
+    // Save varieties
+    $vnames = $_POST['varieties'] ?? [];
+    $vstocks = $_POST['variety_stocks'] ?? [];
+    $vprices = $_POST['variety_unit_prices'] ?? [];
+    $vunits = $_POST['variety_units'] ?? [];
+    $vunit_customs = $_POST['variety_unit_customs'] ?? [];
+
+    if (!empty($vnames)) {
+
+        $vs = $db->prepare("
+            INSERT INTO product_varieties
+            (product_id, name, current_stock, unit_price, unit)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+
+        foreach ($vnames as $i => $vn) {
+
+            $vn = trim($vn);
+
+            if ($vn == '') {
+                continue;
+            }
+
+            $stock = (float)($vstocks[$i] ?? 0);
+            $price = (float)($vprices[$i] ?? 0);
+
+            $unitName = trim($vunit_customs[$i] ?? '');
+            if ($unitName == '') {
+                $unitName = trim($vunits[$i] ?? '');
+            }
+
+            $vs->bind_param(
+                "isdds",
+                $pid,
+                $vn,
+                $stock,
+                $price,
+                $unitName
+            );
+
+            $vs->execute();
+        }
+
+        $vs->close();
+    }
+
+    log_activity('product_add', 'Added Product: ' . $name);
+
+    $_SESSION['success'] = 'Product added successfully.';
+    $db->close();
+
+    header('Location: index.php');
+    exit;
 }
 
 /* ── EDIT FORM ── */

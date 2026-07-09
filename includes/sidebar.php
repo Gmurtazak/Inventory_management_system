@@ -29,21 +29,21 @@ function isActive($p){ global $curPath; return strpos($curPath,$p)!==false ? 'ac
         <span>Dashboard</span>
       </a>
     </li>
-
-    <li>
-      <a href="<?php echo APP_URL; ?>/products/index.php"
-         class="nav-item <?php echo isActive('/products'); ?>">
-        <i class="nav-icon fa-solid fa-box-open"></i>
-        <span>Products</span>
-      </a>
-    </li>
-  <li>
+<li>
     <a href="<?php echo APP_URL; ?>/purchase_orders/index.php"
        class="nav-item <?php echo isActive('/purchase_orders'); ?>">
         <i class="nav-icon fa-solid fa-file-invoice-dollar"></i>
         <span>Purchase Order</span>
     </a>
 </li>
+    <li>
+      <a href="<?php echo APP_URL; ?>/products/index.php"
+         class="nav-item <?php echo isActive('/products'); ?>">
+        <i class="nav-icon fa-solid fa-box-open"></i>
+        <span>Rags to Products</span>
+      </a>
+    </li>
+  
     <li>
       <a href="<?php echo APP_URL; ?>/customers/index.php"
          class="nav-item <?php echo isActive('/customers'); ?>">
